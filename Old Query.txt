@@ -27,3 +27,10 @@ SELECT
     [Invoice Amount], [Final Invoice Amount], [Pending Invoice Amount]
 FROM 
     CTE
+
+
+qwertyuio
+asdfghjk
+zxcvbnm
+
+hello

@@ -1,0 +1,29 @@
+WITH CTE AS (
+    SELECT T0.U_prj AS 'Project Code', CONCAT(SUBSTRING(T0.PIndicator, 1, 4), '-', SUBSTRING(T0.PIndicator, 5, 6)) AS Series,
+        T0.CardName AS 'Customer Name', T0.U_oano AS 'OA No', T2.U_prjman AS 'Project Eng',
+        (SELECT CityS FROM INV12 WHERE INV12.DocEntry = T4.DocEntry) AS 'Site Name',
+        (SELECT StateS FROM INV12 WHERE INV12.DocEntry = T4.DocEntry) AS 'Macro Area (country/Region)',
+        T2.U_protype AS 'Nature of Supply', T4.NumAtCard AS 'PO Number', T2.U_cpdate AS 'PO Date', OCTG.PymntGroup AS 'Payment Terms',
+        T3.ItemCode, T3.Dscription, T4.DocNum AS 'Invoice No', T4.DocDate AS 'Invoice Date', T3.Quantity AS 'Invoice Quantity', 
+        RDR1.OpenQty, T3.LineTotal AS 'Invoice Amount', (T3.LineTotal + T3.LineVat) AS 'Final Invoice Amount', 
+        ((RDR1.OpenQty) * T3.LineTotal) AS 'Pending Invoice Amount',
+        ROW_NUMBER() OVER (PARTITION BY T3.ItemCode ORDER BY T4.DocDate DESC) AS RowNum
+    FROM ODLN T0 
+    INNER JOIN DLN1 T1 ON T0.DocEntry = T1.DocEntry
+    LEFT JOIN dbo.INV1 T3 ON T3.BaseEntry = T0.DocEntry AND T3.BaseLine = T1.Linenum 
+    LEFT JOIN dbo.OINV T4 ON T4.DocEntry = T3.DocEntry 
+    INNER JOIN OCTG ON OCTG.GroupNum = T4.GroupNum 
+    INNER JOIN [@OACP] T2 ON T4.U_oano = T2.DocEntry 
+    INNER JOIN ORDR T5 ON T1.BaseEntry = T5.DocEntry AND T1.BaseType = 17 
+    INNER JOIN RDR1 ON T5.DocEntry = RDR1.DocEntry AND T1.BaseLine = RDR1.LineNum
+    WHERE T3.ItemCode LIKE 'P%'
+)
+SELECT 
+    [Project Code], [Series], [Customer Name], [OA No], [Project Eng], 
+    [Site Name], [Macro Area (country/Region)], [Nature of Supply], [PO Number],
+    [PO Date], [Payment Terms], 
+    [ItemCode], [Dscription], 
+    [Invoice No], [Invoice Date], [Invoice Quantity], [OpenQty],
+    [Invoice Amount], [Final Invoice Amount], [Pending Invoice Amount]
+FROM 
+    CTE
